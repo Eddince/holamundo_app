@@ -1,27 +1,36 @@
 name: Build APK
-on: [push]  # Se ejecuta al hacer push al repositorio
+on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # Máquina virtual con Ubuntu
-
+    runs-on: ubuntu-latest
     steps:
-      # 1. Descarga el código del repositorio
       - uses: actions/checkout@v4
-
-      # 2. Configura Flutter (versión estable)
+      
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.29.3'
-
-      # 3. Obtiene las dependencias del proyecto
+          
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          
+      - name: Fix Gradle project
+        run: |
+          flutter clean
+          rm -rf android ios  # Elimina las carpetas de plataforma existentes
+          flutter create --platforms android .  # Regenera la estructura del proyecto
+          cp -r lib/ tmp_lib/  # Respalda tu código
+          flutter create --platforms android .
+          rm -rf lib/
+          mv tmp_lib/ lib/
+          
       - run: flutter pub get
-
-      # 4. Genera el APK en modo release
       - run: flutter build apk --release
-
-      # 5. Sube el APK como artefacto (usa @v4)
+      
       - uses: actions/upload-artifact@v4
         with:
-          name: app-release.apk  # Nombre del archivo
-          path: build/app/outputs/flutter-apk/app-release.apk  # Ruta del APK
+          name: app-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
